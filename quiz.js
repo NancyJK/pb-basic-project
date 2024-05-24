@@ -1,4 +1,6 @@
 import chalk from "chalk";
+import gradient from "gradient-string";
+import chalkAnimation from "chalk-animation";
 import readlinesync from "readline-sync";
 
 //Defining the Quiz Questions
@@ -200,35 +202,94 @@ class Quiz {
 
   updatePlayerData() {
     this.playersData.push(this.players[this.players.length - 1]);
+
+    // Prepare data for the table
+    let data = [["Name", "Score"]];
+    for (let player of this.playersData) {
+      data.push([player.name, player.score]);
+    }
+
+    // Output the table
+    let output = "";
+    let maxLength = 0; // To keep track of the longest line
+    for (let row of data) {
+      let line = row.join(" | ");
+      output += line + "\n";
+      if (line.length > maxLength) {
+        maxLength = line.length;
+      }
+    }
+    // Add separator lines
+    output = output.replace(/\n/g, "\n" + "-".repeat(maxLength) + "\n");
+    console.log(gradient("#8A2BE2", "#00FFFF", "#4169E1")(output));
   }
 
   playGame() {
     this.welcomePlayer();
-    if (this.chooseCategory() === "quit" || this.askQuestions() === "quit") {
-      console.log(chalk.red("You have quit the game"));
-      return;
-    }
-    if (this.players[this.players.length - 1].score !== undefined) {
-      this.findWinner();
-      this.updatePlayerData(); // Update player data after each game
+    while (true) {
+      if (this.chooseCategory() === "quit") {
+        console.log(chalk.redBright("You have quit the game"));
+        return;
+      }
+      if (this.askQuestions() === "quit") {
+        let playAgain = readlinesync.question(
+          chalk.bgCyan("Do you want to play again? (y/n): ")
+        );
+        if (playAgain.toLowerCase() !== "y") {
+          console.log(chalk.redBright("You have quit the game"));
+          return;
+        }
+        continue;
+      }
+      if (this.players[this.players.length - 1].score !== undefined) {
+        this.findWinner();
+        this.updatePlayerData(); // Update player data after each game
+      }
     }
   }
 
   welcomePlayer() {
-    console.log(chalk.bgBlue("Welcome to the Quiz Game! 😊"));
-    let playerName = readlinesync.question("Please enter your name: ");
-    console.log(chalk.yellow(`Hello, ${playerName}! Let's start the game.`));
+    console.log(
+      gradient(
+        "#8A2BE2",
+        "#00FFFF"
+      )("*******************************************")
+    );
+    console.log(
+      gradient(
+        "#8A2BE2",
+        "#00FFFF"
+      )("=        Welcome to the Quiz Game!        =")
+    );
+    console.log(
+      gradient(
+        "#8A2BE2",
+        "#00FFFF"
+      )("*******************************************")
+    );
+    let playerName = readlinesync.question(
+      chalk.hex("#8A2BE2")("---------Please enter your name--------- ")
+    );
+    console.log(
+      gradient(
+        "#8A2BE2",
+        "#00FFFF",
+        "#4169E1"
+      )(`Hello, ${playerName}! Let's start the game.`)
+    );
     this.players.push({ name: playerName, score: 0 });
   }
 
   chooseCategory() {
-    console.log(chalk.yellow("Please choose a category:"));
+    console.log(
+      chalk.hex('"#8A2BE2"')("---------Please choose a category---------")
+    );
     let keys = Object.keys(this.categories);
     for (let i = 0; i < keys.length; i++) {
-      console.log(chalk.blue(`${i + 1}. ${keys[i]}`));
+      console.log(chalk.hex("#00FFFF")(`${i + 1}. ${keys[i]}`));
     }
     let categoryIndex = readlinesync.question(
-      "Enter the number of your chosen category: "
+      chalk.hex("#8A2BE2")("Enter the number of your chosen category: ")
     );
     if (categoryIndex.toLocaleLowerCase() === "quit") {
       return "quit";
@@ -239,13 +300,13 @@ class Quiz {
   askQuestions() {
     const alphabets = "abcdefghijklmnopqrstuvwxyz".split("");
     for (let i = 0; i < this.questions.length; i++) {
-      let questionText = chalk.bgBlue(this.questions[i].question);
+      let questionText = chalk.bgCyanBright(this.questions[i].question);
       if (this.questions[i].options) {
         questionText +=
           "\n" +
           this.questions[i].options
             .map((option, index) =>
-              chalk.yellow(alphabets[index] + ". " + option)
+              gradient("#8A2BE2", "#00FFFF")(alphabets[index] + ". " + option)
             )
             .join("\n");
       }
@@ -254,6 +315,14 @@ class Quiz {
         return "quit";
       }
       this.checkAnswer(response, i, alphabets);
+      let nextQuestion = readlinesync.question(
+        chalk.hex("#00FFFF")(
+          "Do you want to continue to the next question? (y/n): "
+        )
+      );
+      if (nextQuestion.toLowerCase() !== "y") {
+        return "quit";
+      }
     }
   }
 
@@ -266,19 +335,29 @@ class Quiz {
 
     if (this.questions[questionIndex].options) {
       response.toLowerCase() === alphabets[this.questions[questionIndex].answer]
-        ? this.updateScore(5, "Correct! You gained 5 points.")
+        ? this.updateScore(
+            5,
+            chalk.hex("#8A2BE2")("Correct! You gained 5 points.")
+          )
         : this.updateScore(
             -5,
-            "Wrong answer. You lost 5 points. The correct answer was: " +
-              correctAnswer
+            chalk.hex("#8A2BE2")(
+              "Wrong answer. You lost 5 points. The correct answer was: " +
+                correctAnswer
+            )
           );
     } else {
       response.toLowerCase() === correctAnswer.toLowerCase()
-        ? this.updateScore(5, "Correct🧠! You gained 5 points.")
+        ? this.updateScore(
+            5,
+            chalk.hex("#8A2BE2")("Correct🧠! You gained 5 points.")
+          )
         : this.updateScore(
             -5,
-            "Wrong answer. You lost 5 points. The correct answer was: " +
-              correctAnswer
+            chalk.hex("#8A2BE2")(
+              "Wrong answer. You lost 5 points. The correct answer was: " +
+                correctAnswer
+            )
           );
     }
   }
@@ -286,25 +365,31 @@ class Quiz {
   findWinner() {
     let maxScore = -Infinity;
     let winner = null;
-    console.log(chalk.yellow("Here are the final scores:"));
+    console.log(chalk.hex("#8A2BE2")("Here are the final scores:"));
     for (let player of this.players) {
-      console.log(chalk.blue(`${player.name}: ${player.score}`));
+      // console.log(chalk.blue(`${player.name}: ${player.score}`));
       if (player.score > maxScore) {
         maxScore = player.score;
         winner = player.name;
       }
     }
-    console.log(
-      chalk.green(`The winner is ${winner} with a score of ${maxScore}🔥🔥!`)
+    let trophy = gradient("#8A2BE2", "#00FFFF", "#4169E1").multiline(
+      [
+        "   ___________",
+        "  '._==_==_=_.'",
+        "  .-\\:      /-.",
+        " ( (|:      |) )",
+        " '-.-\\:.__./-.-'",
+        "   '-._____.-'",
+      ].join("\n")
     );
+    console.log(trophy);
   }
   updateScore(points, message) {
     this.players[this.players.length - 1].score += points;
-    console.log(chalk.green(message));
+    console.log(chalk.hex("#8A2BE2")(message));
   }
 }
-
-// Running the Quizzes
 
 let quiz = new Quiz();
 quiz.playGame();
